@@ -27,4 +27,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: your-username/sample-app:latest
+          tags: aishwariaroy239/sample-app:latest
