@@ -1,0 +1,59 @@
+name: Build, Push Docker Image and Deploy to Kubernetes via Argo CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: aishwariaroy239/sample-app:latest
+
+  deploy_to_k8s_and_sync_argo_cd:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v2
+        with:
+          kubectl-version: 'latest'
+
+      - name: Set kubeconfig
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+
+      - name: Login to Argo CD
+        run: |
+          argocd login ${{ secrets.ARGOCD_SERVER }} --username ${{ secrets.ARGOCD_USERNAME }} --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
+
+      - name: Update Kubernetes Deployment with New Image
+        run: |
+          kubectl set image deployment/sample-app sample-app=aishwariaroy239/sample-app:latest --namespace=default
+
+      - name: Sync application with Argo CD
+        run: |
+          argocd app sync sample-app-infra
