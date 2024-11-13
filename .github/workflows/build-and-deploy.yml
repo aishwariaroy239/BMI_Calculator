@@ -47,6 +47,11 @@ jobs:
           mkdir -p ~/.kube  # Create the .kube directory
           echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config  # Write the kubeconfig
 
+      - name: Install Argo CD CLI
+        run: |
+          curl -sSL https://github.com/argoproj/argo-cd/releases/download/v2.7.0/argocd-linux-amd64 -o /usr/local/bin/argocd
+          chmod +x /usr/local/bin/argocd
+
       - name: Login to Argo CD
         run: |
           argocd login ${{ secrets.ARGOCD_SERVER }} --username ${{ secrets.ARGOCD_USERNAME }} --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
